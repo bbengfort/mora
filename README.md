@@ -1,12 +1,12 @@
 # Mora
 
-**A study of  the uptime and latency of user-oriented distributed systems.**
-
 [![Build Status](https://travis-ci.org/bbengfort/mora.svg?branch=master)](https://travis-ci.org/bbengfort/mora)
 [![Coverage Status](https://coveralls.io/repos/github/bbengfort/mora/badge.svg?branch=master)](https://coveralls.io/github/bbengfort/mora?branch=master)
 [![GoDoc Reference](https://godoc.org/github.com/bbengfort/mora?status.svg)](https://godoc.org/github.com/bbengfort/mora)
 [![Go Report Card](https://goreportcard.com/badge/github.com/bbengfort/mora)](https://goreportcard.com/report/github.com/bbengfort/mora)
 [![Stories in Ready](https://badge.waffle.io/bbengfort/mora.png?label=ready&title=Ready)](https://waffle.io/bbengfort/mora)
+
+**A study of  the uptime and latency of user-oriented distributed systems.**
 
 ![Mora Architecture Diagram](http://bbengfort.github.io/assets/images/2016-05-10-mora-architecture.png)
 
@@ -20,7 +20,7 @@ Mora (delay, waiting) observes ping latencies between nodes in a wide area, hete
 
 ### Documentation
 
-[Documenting go code correctly](https://blog.golang.org/godoc-documenting-go-code) is vital, because [godoc.org] will automatically [pull package documentation](https://godoc.org/-/about) from GitHub.
+[Documenting go code correctly](https://blog.golang.org/godoc-documenting-go-code) is vital, because [godoc.org](https://godoc.org/) will automatically [pull package documentation](https://godoc.org/-/about) from GitHub.
 
 To view the documentation locally before pushing:
 
