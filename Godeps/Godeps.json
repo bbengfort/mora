@@ -1,0 +1,6 @@
+{
+	"ImportPath": "github.com/bbengfort/mora",
+	"GoVersion": "go1.6",
+	"GodepVersion": "v65",
+	"Deps": []
+}
