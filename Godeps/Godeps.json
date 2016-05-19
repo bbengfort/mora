@@ -12,6 +12,11 @@
 			"Rev": "7f0ca9a34958d6702ac8f38530d19001fa5b1560"
 		},
 		{
+			"ImportPath": "github.com/kelseyhightower/envconfig",
+			"Comment": "1.1.0-17-g91921eb",
+			"Rev": "91921eb4cf999321cdbeebdba5a03555800d493b"
+		},
+		{
 			"ImportPath": "github.com/onsi/ginkgo",
 			"Comment": "v1.2.0-55-g5437a97",
 			"Rev": "5437a97bf824dec14e58d68c56ee36e772670c2e"

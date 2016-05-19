@@ -8,9 +8,13 @@ import (
 
 	"github.com/bbengfort/mora"
 	"github.com/codegangsta/cli"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+
+	// Load the .env file if it exists
+	godotenv.Load()
 
 	// Insantiate the comamnd line application
 	app := cli.NewApp()
@@ -19,6 +23,7 @@ func main() {
 	app.Version = mora.Version
 	app.Author = "Benjamin Bengfort"
 	app.Email = "benjamin@bengfort.com"
+	app.EnableBashCompletion = true
 	app.Action = beginSonar
 
 	// Run the command line application
@@ -26,6 +31,22 @@ func main() {
 }
 
 // Begins the listening and pinging threads
-func beginSonar(ctx *cli.Context) {
+func beginSonar(ctx *cli.Context) error {
+	sonar, err := mora.New()
 
+	if err != nil {
+		return cli.NewExitError(err.Error(), 1)
+	}
+
+	_, err = sonar.Scribo.Get(mora.NODES)
+	if err != nil {
+		return cli.NewExitError(err.Error(), 2)
+	}
+
+	_, err = sonar.Scribo.Get(mora.NODES)
+	if err != nil {
+		return cli.NewExitError(err.Error(), 2)
+	}
+
+	return nil
 }
