@@ -12,6 +12,15 @@
 			"Rev": "7f0ca9a34958d6702ac8f38530d19001fa5b1560"
 		},
 		{
+			"ImportPath": "github.com/golang/protobuf/proto",
+			"Rev": "68415e7123da32b07eab49c96d2c4d6158360e9b"
+		},
+		{
+			"ImportPath": "github.com/joho/godotenv",
+			"Comment": "v1-10-g4ed1339",
+			"Rev": "4ed13390c0acd2ff4e371e64d8b97c8954138243"
+		},
+		{
 			"ImportPath": "github.com/kelseyhightower/envconfig",
 			"Comment": "1.1.0-17-g91921eb",
 			"Rev": "91921eb4cf999321cdbeebdba5a03555800d493b"
@@ -102,6 +111,11 @@
 			"Rev": "815512bce8c889153a13104c9d9b2416153c1e02"
 		},
 		{
+			"ImportPath": "github.com/onsi/gomega/ghttp",
+			"Comment": "v1.0-92-g815512b",
+			"Rev": "815512bce8c889153a13104c9d9b2416153c1e02"
+		},
+		{
 			"ImportPath": "github.com/onsi/gomega/internal/assertion",
 			"Comment": "v1.0-92-g815512b",
 			"Rev": "815512bce8c889153a13104c9d9b2416153c1e02"
@@ -150,6 +164,10 @@
 			"ImportPath": "github.com/onsi/gomega/types",
 			"Comment": "v1.0-92-g815512b",
 			"Rev": "815512bce8c889153a13104c9d9b2416153c1e02"
+		},
+		{
+			"ImportPath": "github.com/tent/hawk-go",
+			"Rev": "8bd4a9f3b4cf4a535303c3f5ce3811475764139c"
 		}
 	]
 }
