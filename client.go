@@ -27,6 +27,14 @@ const (
 	XScriboVal     = "Mora-Scio/v%s"
 )
 
+// Go 1.6 net/http does not include HTTP Method Constants, so we include them.
+const (
+	MethodGet    = "GET"
+	MethodPost   = "POST"
+	MethodPut    = "PUT"
+	MethodDelete = "DELETE"
+)
+
 // ScriboClient connects to and interacts with the Scribo RESTful API.
 type ScriboClient struct {
 	Credentials *hawk.Credentials // A pointer to a HAWK credential struct
@@ -56,7 +64,7 @@ func (scribo *ScriboClient) Get(resource string, detail ...string) (*http.Respon
 		return nil, err
 	}
 
-	request, err := http.NewRequest(http.MethodGet, endpoint, nil)
+	request, err := http.NewRequest(MethodGet, endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +89,7 @@ func (scribo *ScriboClient) Post(data interface{}, resource string, detail ...st
 	}
 
 	// Construct the request, execute it and return the response
-	request, err := http.NewRequest(http.MethodPost, endpoint, buff)
+	request, err := http.NewRequest(MethodPost, endpoint, buff)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +118,7 @@ func (scribo *ScriboClient) Put(data interface{}, resource string, detail string
 	}
 
 	// Construct the request, execute it and return the response
-	request, err := http.NewRequest(http.MethodPut, endpoint, buff)
+	request, err := http.NewRequest(MethodPut, endpoint, buff)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +140,7 @@ func (scribo *ScriboClient) Delete(resource string, detail string) (*http.Respon
 	}
 
 	// Construct the request, execute it and return the response
-	request, err := http.NewRequest(http.MethodDelete, endpoint, nil)
+	request, err := http.NewRequest(MethodDelete, endpoint, nil)
 	if err != nil {
 		return nil, err
 	}

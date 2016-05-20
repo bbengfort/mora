@@ -1,0 +1,20 @@
+package echo;
+
+message Node {
+    required string name  = 1;
+    required string address  = 2;
+    optional string dns  = 3;
+}
+
+message Echo {
+    required Node source = 1;
+    required Node target = 2;
+    required int64 sent = 3;
+    optional bytes payload = 15;
+}
+
+message EchoReply {
+    required Node receiver = 1;
+    required int64 received = 2;
+    required Echo echo = 3;
+}
