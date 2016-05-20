@@ -4,6 +4,9 @@
 package main
 
 import (
+	"fmt"
+	"net/http"
+	"net/http/httputil"
 	"os"
 
 	"github.com/bbengfort/mora"
@@ -38,15 +41,33 @@ func beginSonar(ctx *cli.Context) error {
 		return cli.NewExitError(err.Error(), 1)
 	}
 
-	_, err = sonar.Scribo.Get(mora.NODES)
-	if err != nil {
-		return cli.NewExitError(err.Error(), 2)
-	}
+	// Gets
+	dumpResponse(sonar.Scribo.Get(mora.NODES))
+	dumpResponse(sonar.Scribo.Get(mora.NODES, "1"))
 
-	_, err = sonar.Scribo.Get(mora.NODES)
-	if err != nil {
-		return cli.NewExitError(err.Error(), 2)
-	}
+	// Post a new node
+	node := make(map[string]string)
+	node["name"] = "burrito"
+	node["address"] = "1.2.3.4"
+	node["dns"] = "little.donkey.edu"
+	// dumpResponse(sonar.Scribo.Post(node, mora.NODES))
+	// dumpResponse(sonar.Scribo.Put(node, mora.NODES, "4"))
+	// dumpResponse(sonar.Scribo.Delete(mora.NODES, "4"))
 
 	return nil
+}
+
+func dumpResponse(response *http.Response, err error) error {
+	if err != nil {
+		return cli.NewExitError(err.Error(), 2)
+	}
+
+	fmt.Println("-----------------")
+	body, err := httputil.DumpResponse(response, true)
+	if err == nil {
+		fmt.Println(string(body))
+		fmt.Println("-----------------")
+	}
+
+	return err
 }

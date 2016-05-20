@@ -1,11 +1,14 @@
 package mora
 
 import (
+	"bytes"
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"path"
 	"time"
 
 	"github.com/tent/hawk-go"
@@ -17,41 +20,130 @@ const (
 	PINGS = "pings"
 )
 
+// Request Header Keys and Values
+const (
+	ContentTypeKey = "Content-Type"
+	ContentTypeVal = "application/json;charset=UTF-8"
+	XScriboKey     = "X-Scribo-Application"
+	XScriboVal     = "Mora-Scio/v%s"
+)
+
 // ScriboClient connects to and interacts with the Scribo RESTful API.
 type ScriboClient struct {
+	Credentials *hawk.Credentials // A pointer to a HAWK credential struct
 	config      *Configuration    // A pointer to the configuration in the app.
-	credentials *hawk.Credentials // A pointer to a HAWK credential struct
 	client      *http.Client      // The inner HTTP client for making requests
+}
+
+// Do executes a request with the internal client, ensuring that it is
+// authenticated and that any default headers are added to the request.
+// Note that this method must have a pointer receiver in order to ensure that
+// Authenticate can check and modify the credentials of the scribo instance.
+func (scribo *ScriboClient) Do(request *http.Request) (*http.Response, error) {
+	// Authenticate the request and add headers
+	scribo.Authenticate(request)
+	request.Header.Set(XScriboKey, fmt.Sprintf(XScriboVal, Version))
+
+	data, err := httputil.DumpRequestOut(request, true)
+	if err == nil {
+		fmt.Println(string(data))
+	}
+
+	// Execute the request
+	return scribo.client.Do(request)
 }
 
 // Get makes a GET http request to the given resource.
 // Note that this method must have a pointer receiver because Authenticate
 // must check and modify the credentials of the scribo instance.
-func (scribo *ScriboClient) Get(resource string) (interface{}, error) {
-	endpoint, err := scribo.constructEndpoint(resource)
+func (scribo *ScriboClient) Get(resource string, detail ...string) (*http.Response, error) {
+	endpoint, err := scribo.Endpoint(resource, detail...)
 	if err != nil {
 		return nil, err
 	}
 
-	request, err := http.NewRequest("GET", endpoint, nil)
-	if err != nil {
-		return nil, err
-	}
-	scribo.Authenticate(request)
-
-	response, err := scribo.client.Do(request)
+	request, err := http.NewRequest(http.MethodGet, endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = httputil.DumpResponse(response, true)
+	return scribo.Do(request)
+}
+
+// Post makes a POST http request to the given resource with associated data.
+// Note that this method must have a pointer receiver because Authenticate
+// must check and modify the credentials of the scribo instance.
+func (scribo *ScriboClient) Post(data interface{}, resource string, detail ...string) (*http.Response, error) {
+	// Construct the endpoint
+	endpoint, err := scribo.Endpoint(resource, detail...)
 	if err != nil {
 		return nil, err
 	}
 
-	// fmt.Println(string(data))
+	// Marshal the JSON data into a byte buffer
+	buff := new(bytes.Buffer)
+	if err = json.NewEncoder(buff).Encode(data); err != nil {
+		return nil, err
+	}
 
-	return nil, nil
+	// Construct the request, execute it and return the response
+	request, err := http.NewRequest(http.MethodPost, endpoint, buff)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set the Content-Type Header
+	request.Header.Set(ContentTypeKey, ContentTypeVal)
+
+	return scribo.Do(request)
+
+}
+
+// Put makes a PUT http request to update a resource/detail with new data.
+// Note that this method must have a pointer receiver because Authenticate
+// must check and modify the credentials of the scribo instance.
+func (scribo *ScriboClient) Put(data interface{}, resource string, detail string) (*http.Response, error) {
+	// Construct the endpoint
+	endpoint, err := scribo.Endpoint(resource, detail)
+	if err != nil {
+		return nil, err
+	}
+
+	// Marshal the JSON data into a byte buffer
+	buff := new(bytes.Buffer)
+	if err = json.NewEncoder(buff).Encode(data); err != nil {
+		return nil, err
+	}
+
+	// Construct the request, execute it and return the response
+	request, err := http.NewRequest(http.MethodPut, endpoint, buff)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set the Content-Type Header
+	request.Header.Set(ContentTypeKey, ContentTypeVal)
+
+	return scribo.Do(request)
+}
+
+// Delete makes a DELETE http request to delete a resource/detail.
+// Note that this method must have a pointer receiver because Authenticate
+// must check and modify the credentials of the scribo instance.
+func (scribo *ScriboClient) Delete(resource string, detail string) (*http.Response, error) {
+	// Construct the endpoint
+	endpoint, err := scribo.Endpoint(resource, detail)
+	if err != nil {
+		return nil, err
+	}
+
+	// Construct the request, execute it and return the response
+	request, err := http.NewRequest(http.MethodDelete, endpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return scribo.Do(request)
 }
 
 // Authenticate a request using the configuration provided.
@@ -59,31 +151,36 @@ func (scribo *ScriboClient) Authenticate(request *http.Request) {
 
 	// Construct a set of credentials if they don't already exist.
 	// Note that all callers must also have the pointer receiver to modify scribo.
-	if scribo.credentials == nil {
-		scribo.credentials = new(hawk.Credentials)
-		scribo.credentials.ID = scribo.config.Name
-		scribo.credentials.Key = scribo.config.ScriboKey
-		scribo.credentials.Hash = sha256.New
-
-		fmt.Println("Credentials created!")
-	} else {
-		fmt.Println("Credentials not created!")
+	if scribo.Credentials == nil {
+		scribo.Credentials = new(hawk.Credentials)
+		scribo.Credentials.ID = scribo.config.Name
+		scribo.Credentials.Key = scribo.config.ScriboKey
+		scribo.Credentials.Hash = sha256.New
 	}
 
 	// Add the credentials to the request
-	auth := hawk.NewRequestAuth(request, scribo.credentials, time.Duration(0))
+	auth := hawk.NewRequestAuth(request, scribo.Credentials, time.Duration(0))
 	request.Header.Add("Authorization", auth.RequestHeader())
 }
 
-// Construct an endpoint from a resource, should be one of NODES or PINGS,
-// but I have refrained from error checking to make things more adaptable.
-func (scribo ScriboClient) constructEndpoint(resource string) (string, error) {
+// Endpoint constructs a URL from a resource, e.g. NODES or PINGS, and can
+// optionally pass a detail string to get a specific element from the resource.
+// TODO: this was exported for testing, but would rather have it be internal.
+func (scribo ScriboClient) Endpoint(resource string, detail ...string) (string, error) {
+	var scriboPath string
+
+	if len(detail) > 0 {
+		parts := append([]string{resource}, detail...)
+		scriboPath = path.Join(parts...)
+	} else {
+		scriboPath = resource
+	}
 
 	u, err := url.Parse(scribo.config.ScriboURL)
 	if err != nil {
 		return "", err
 	}
 
-	u.Path = resource
+	u.Path = scriboPath
 	return u.String(), nil
 }

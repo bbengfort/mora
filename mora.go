@@ -42,7 +42,6 @@ func New() (*Sonar, error) {
 	sonar.Scribo = new(ScriboClient)
 	sonar.Scribo.config = &sonar.Config
 	sonar.Scribo.client = new(http.Client)
-	sonar.Scribo.credentials = nil
 
 	return sonar, nil
 }
