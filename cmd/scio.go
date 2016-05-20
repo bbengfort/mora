@@ -42,8 +42,9 @@ func beginSonar(ctx *cli.Context) error {
 	}
 
 	// Gets
-	dumpResponse(sonar.Scribo.Get(mora.NODES))
-	dumpResponse(sonar.Scribo.Get(mora.NODES, "1"))
+	fmt.Println(sonar.Scribo.GetNodes())
+	// dumpResponse(sonar.Scribo.Get(mora.NODES))
+	// dumpResponse(sonar.Scribo.Get(mora.NODES, "1"))
 
 	// Post a new node
 	node := make(map[string]string)

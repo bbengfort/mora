@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/http/httputil"
 	"net/url"
 	"path"
 	"time"
@@ -43,11 +42,6 @@ func (scribo *ScriboClient) Do(request *http.Request) (*http.Response, error) {
 	// Authenticate the request and add headers
 	scribo.Authenticate(request)
 	request.Header.Set(XScriboKey, fmt.Sprintf(XScriboVal, Version))
-
-	data, err := httputil.DumpRequestOut(request, true)
-	if err == nil {
-		fmt.Println(string(data))
-	}
 
 	// Execute the request
 	return scribo.client.Do(request)
