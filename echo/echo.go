@@ -6,14 +6,24 @@ package echo
 
 import "time"
 
+// Parse a Unix timestamp from an echo.Time message.
+func (ts *Time) Parse() time.Time {
+	if ts != nil {
+		secs := ts.Seconds
+		nsecs := ts.Nanoseconds
+		return time.Unix(secs, nsecs)
+	}
+	return time.Time{}
+}
+
 // GetSentTime parses the sent time on an Echo message to a time.Time
-func (m *Echo) GetSentTime() time.Time {
-	nsecs := m.GetSent()
-	return time.Unix(0, nsecs)
+func (m *EchoRequest) GetSentTime() time.Time {
+	ts := m.GetSent()
+	return ts.Parse()
 }
 
 // GetReceivedTime parses the received time on an EchoReply message to a time.Time
 func (m *EchoReply) GetReceivedTime() time.Time {
-	nsecs := m.GetReceived()
-	return time.Unix(0, nsecs)
+	ts := m.GetReceived()
+	return ts.Parse()
 }

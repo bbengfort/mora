@@ -9,8 +9,9 @@ It is generated from these files:
 	echo.proto
 
 It has these top-level messages:
+	Time
 	Node
-	Echo
+	EchoRequest
 	EchoReply
 */
 package echo
@@ -18,6 +19,11 @@ package echo
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
+
+import (
+	context "golang.org/x/net/context"
+	grpc "google.golang.org/grpc"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -28,92 +34,112 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // const _ = proto.ProtoPackageIsVersion1
 
+// Time preserves nanosecond latency measurements by using this custom time
+// struct which should include either seconds or nanoseconds since the Unix
+// epoch as unsigned int64. In Go, you can use time.Unix to parse this field.
+type Time struct {
+	Seconds     int64 `protobuf:"varint,1,opt,name=seconds" json:"seconds,omitempty"`
+	Nanoseconds int64 `protobuf:"varint,2,opt,name=nanoseconds" json:"nanoseconds,omitempty"`
+}
+
+// Reset the message
+func (m *Time) Reset() { *m = Time{} }
+
+// String returns a string representation of the message
+func (m *Time) String() string { return proto.CompactTextString(m) }
+
+// ProtoMessage is a generated method
+func (*Time) ProtoMessage() {}
+
+// Descriptor is a generated method
+func (*Time) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+
+// Node describes an echoing machine on the network, either the sender
+// (the source) or the receiver (the target). This is distinct from mora.Node.
 type Node struct {
-	Name             *string `protobuf:"bytes,1,req,name=name" json:"name,omitempty"`
-	Address          *string `protobuf:"bytes,2,req,name=address" json:"address,omitempty"`
-	Dns              *string `protobuf:"bytes,3,opt,name=dns" json:"dns,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
+	Name    string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	Address string `protobuf:"bytes,2,opt,name=address" json:"address,omitempty"`
+	Dns     string `protobuf:"bytes,3,opt,name=dns" json:"dns,omitempty"`
 }
 
-func (m *Node) Reset()                    { *m = Node{} }
-func (m *Node) String() string            { return proto.CompactTextString(m) }
-func (*Node) ProtoMessage()               {}
-func (*Node) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+// Reset the message
+func (m *Node) Reset() { *m = Node{} }
 
-func (m *Node) GetName() string {
-	if m != nil && m.Name != nil {
-		return *m.Name
-	}
-	return ""
+// String returns a string representation of the message
+func (m *Node) String() string { return proto.CompactTextString(m) }
+
+// ProtoMessage is a generated method
+func (*Node) ProtoMessage() {}
+
+// Descriptor is a generated method
+func (*Node) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+
+// EchoRequest is used to measure latency and uptime as with a ping, but
+// designed to be more application-layer specific for measuring system latency.
+type EchoRequest struct {
+	Source  *Node  `protobuf:"bytes,1,opt,name=source" json:"source,omitempty"`
+	Target  *Node  `protobuf:"bytes,2,opt,name=target" json:"target,omitempty"`
+	Sent    *Time  `protobuf:"bytes,3,opt,name=sent" json:"sent,omitempty"`
+	Payload []byte `protobuf:"bytes,15,opt,name=payload,proto3" json:"payload,omitempty"`
 }
 
-func (m *Node) GetAddress() string {
-	if m != nil && m.Address != nil {
-		return *m.Address
-	}
-	return ""
-}
+// Reset the message
+func (m *EchoRequest) Reset() { *m = EchoRequest{} }
 
-func (m *Node) GetDns() string {
-	if m != nil && m.Dns != nil {
-		return *m.Dns
-	}
-	return ""
-}
+// String returns a string representation of the message
+func (m *EchoRequest) String() string { return proto.CompactTextString(m) }
 
-type Echo struct {
-	Source           *Node  `protobuf:"bytes,1,req,name=source" json:"source,omitempty"`
-	Target           *Node  `protobuf:"bytes,2,req,name=target" json:"target,omitempty"`
-	Sent             *int64 `protobuf:"varint,3,req,name=sent" json:"sent,omitempty"`
-	Payload          []byte `protobuf:"bytes,15,opt,name=payload" json:"payload,omitempty"`
-	XXX_unrecognized []byte `json:"-"`
-}
+// ProtoMessage is a generated method
+func (*EchoRequest) ProtoMessage() {}
 
-func (m *Echo) Reset()                    { *m = Echo{} }
-func (m *Echo) String() string            { return proto.CompactTextString(m) }
-func (*Echo) ProtoMessage()               {}
-func (*Echo) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+// Descriptor is a generated method
+func (*EchoRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
 
-func (m *Echo) GetSource() *Node {
+// GetSource returns the source node
+func (m *EchoRequest) GetSource() *Node {
 	if m != nil {
 		return m.Source
 	}
 	return nil
 }
 
-func (m *Echo) GetTarget() *Node {
+// GetTarget returns the target node
+func (m *EchoRequest) GetTarget() *Node {
 	if m != nil {
 		return m.Target
 	}
 	return nil
 }
 
-func (m *Echo) GetSent() int64 {
-	if m != nil && m.Sent != nil {
-		return *m.Sent
-	}
-	return 0
-}
-
-func (m *Echo) GetPayload() []byte {
+// GetSent returns the time struct
+func (m *EchoRequest) GetSent() *Time {
 	if m != nil {
-		return m.Payload
+		return m.Sent
 	}
 	return nil
 }
 
+// EchoReply is used to echo a message containing the actual receiver node as
+// well as the received timestamp and a payload containing the original echo.
 type EchoReply struct {
-	Receiver         *Node  `protobuf:"bytes,1,req,name=receiver" json:"receiver,omitempty"`
-	Received         *int64 `protobuf:"varint,2,req,name=received" json:"received,omitempty"`
-	Echo             *Echo  `protobuf:"bytes,3,req,name=echo" json:"echo,omitempty"`
-	XXX_unrecognized []byte `json:"-"`
+	Receiver *Node        `protobuf:"bytes,1,opt,name=receiver" json:"receiver,omitempty"`
+	Received *Time        `protobuf:"bytes,2,opt,name=received" json:"received,omitempty"`
+	Echo     *EchoRequest `protobuf:"bytes,3,opt,name=echo" json:"echo,omitempty"`
 }
 
-func (m *EchoReply) Reset()                    { *m = EchoReply{} }
-func (m *EchoReply) String() string            { return proto.CompactTextString(m) }
-func (*EchoReply) ProtoMessage()               {}
-func (*EchoReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+// Reset the message
+func (m *EchoReply) Reset() { *m = EchoReply{} }
 
+// String returns a string representation of the message
+func (m *EchoReply) String() string { return proto.CompactTextString(m) }
+
+// ProtoMessage is a generated method
+func (*EchoReply) ProtoMessage() {}
+
+// Descriptor is a generated method
+func (*EchoReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
+
+// GetReceiver returns the actual receiving node
 func (m *EchoReply) GetReceiver() *Node {
 	if m != nil {
 		return m.Receiver
@@ -121,14 +147,16 @@ func (m *EchoReply) GetReceiver() *Node {
 	return nil
 }
 
-func (m *EchoReply) GetReceived() int64 {
-	if m != nil && m.Received != nil {
-		return *m.Received
+// GetReceived returns the timestamp of reciept
+func (m *EchoReply) GetReceived() *Time {
+	if m != nil {
+		return m.Received
 	}
-	return 0
+	return nil
 }
 
-func (m *EchoReply) GetEcho() *Echo {
+// GetEcho returns the original echo payload
+func (m *EchoReply) GetEcho() *EchoRequest {
 	if m != nil {
 		return m.Echo
 	}
@@ -136,23 +164,110 @@ func (m *EchoReply) GetEcho() *Echo {
 }
 
 func init() {
+	proto.RegisterType((*Time)(nil), "echo.Time")
 	proto.RegisterType((*Node)(nil), "echo.Node")
-	proto.RegisterType((*Echo)(nil), "echo.Echo")
+	proto.RegisterType((*EchoRequest)(nil), "echo.EchoRequest")
 	proto.RegisterType((*EchoReply)(nil), "echo.EchoReply")
 }
 
+// Reference imports to suppress errors if they are not otherwise used.
+var _ context.Context
+var _ grpc.ClientConn
+
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+const _ = grpc.SupportPackageIsVersion2
+
+// Client API for Echo service
+
+// EchoClient is an interface for sending bounce messages.
+type EchoClient interface {
+	// Bounce allows nodes to respond to echo requests with echo replies.
+	Bounce(ctx context.Context, in *EchoRequest, opts ...grpc.CallOption) (*EchoReply, error)
+}
+
+type echoClient struct {
+	cc *grpc.ClientConn
+}
+
+// NewEchoClient creates an echo client with a connection
+func NewEchoClient(cc *grpc.ClientConn) EchoClient {
+	return &echoClient{cc}
+}
+
+// Bounce implements the client interface
+func (c *echoClient) Bounce(ctx context.Context, in *EchoRequest, opts ...grpc.CallOption) (*EchoReply, error) {
+	out := new(EchoReply)
+	err := grpc.Invoke(ctx, "/echo.Echo/Bounce", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Server API for Echo service
+
+// EchoServer is an interface for echo responders
+type EchoServer interface {
+	// Bounce allows nodes to respond to echo requests with echo replies.
+	Bounce(context.Context, *EchoRequest) (*EchoReply, error)
+}
+
+// RegisterEchoServer registers a service description on the context
+func RegisterEchoServer(s *grpc.Server, srv EchoServer) {
+	s.RegisterService(&_Echo_serviceDesc, srv)
+}
+
+func _Echo_Bounce_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EchoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EchoServer).Bounce(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/echo.Echo/Bounce",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EchoServer).Bounce(ctx, req.(*EchoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _Echo_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "echo.Echo",
+	HandlerType: (*EchoServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Bounce",
+			Handler:    _Echo_Bounce_Handler,
+		},
+	},
+	Streams: []grpc.StreamDesc{},
+}
+
 var fileDescriptor0 = []byte{
-	// 191 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x6c, 0xcf, 0xb1, 0xca, 0xc2, 0x30,
-	0x14, 0x05, 0x60, 0xda, 0x84, 0xff, 0xb7, 0xb7, 0x85, 0x4a, 0xa6, 0x20, 0x0e, 0xa5, 0x53, 0xa7,
-	0x0e, 0x7d, 0x07, 0x57, 0x07, 0xc1, 0xd1, 0x21, 0x34, 0x17, 0x15, 0x6a, 0x13, 0x92, 0x28, 0xf4,
-	0xed, 0x4d, 0xae, 0x50, 0x10, 0xdc, 0x42, 0x4e, 0xce, 0x77, 0x08, 0x00, 0x8e, 0x37, 0xd3, 0x5b,
-	0x67, 0x82, 0x11, 0x3c, 0x9d, 0xdb, 0x01, 0xf8, 0xd1, 0x68, 0x14, 0x15, 0xf0, 0x59, 0x3d, 0x50,
-	0x66, 0x4d, 0xde, 0x15, 0xa2, 0x86, 0x7f, 0xa5, 0xb5, 0x43, 0xef, 0x65, 0x4e, 0x17, 0x25, 0x30,
-	0x3d, 0x7b, 0xc9, 0x9a, 0xac, 0x2b, 0xda, 0x0b, 0xf0, 0x43, 0xec, 0x8a, 0x1d, 0xfc, 0x79, 0xf3,
-	0x74, 0xe3, 0xa7, 0x55, 0x0e, 0xd0, 0x13, 0x4f, 0x5e, 0xcc, 0x82, 0x72, 0x57, 0x0c, 0x04, 0x7c,
-	0x67, 0x71, 0xcb, 0xe3, 0x1c, 0xa2, 0x96, 0x77, 0x2c, 0x6d, 0x59, 0xb5, 0x4c, 0x46, 0x69, 0x59,
-	0x47, 0xbe, 0x6a, 0xcf, 0x50, 0x24, 0xfe, 0x84, 0x76, 0x5a, 0xc4, 0x1e, 0x36, 0x0e, 0x47, 0xbc,
-	0xbf, 0xd0, 0xfd, 0x58, 0xd9, 0xae, 0xa9, 0xa6, 0x1d, 0x26, 0x24, 0xd0, 0xbf, 0xc8, 0x5e, 0xdf,
-	0x26, 0xee, 0x1d, 0x00, 0x00, 0xff, 0xff, 0x58, 0xaf, 0x1c, 0x19, 0xfc, 0x00, 0x00, 0x00,
+	// 306 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x6c, 0x52, 0xcb, 0x4e, 0xc3, 0x30,
+	0x10, 0x24, 0xd4, 0x2a, 0x74, 0x8b, 0x54, 0xea, 0x53, 0xc4, 0x01, 0x45, 0x96, 0x40, 0x9c, 0x72,
+	0x28, 0x12, 0x1f, 0x10, 0x09, 0x8e, 0xa8, 0xb2, 0xf8, 0x01, 0x37, 0x5e, 0x4a, 0xa5, 0xc6, 0x0e,
+	0xb6, 0x83, 0xd4, 0x2b, 0x3f, 0xc0, 0x2f, 0x13, 0x6f, 0x9a, 0x28, 0x3c, 0x6e, 0xbb, 0x33, 0x93,
+	0xd9, 0xd9, 0x78, 0x01, 0xb0, 0x7c, 0xb3, 0x79, 0xed, 0x6c, 0xb0, 0x9c, 0xc5, 0x5a, 0x14, 0xc0,
+	0x5e, 0x76, 0x15, 0xf2, 0x14, 0xce, 0x3c, 0x96, 0xd6, 0x68, 0x9f, 0x26, 0x59, 0x72, 0x37, 0x91,
+	0x7d, 0xcb, 0x33, 0x98, 0x1b, 0x65, 0x6c, 0xcf, 0x9e, 0x12, 0x3b, 0x86, 0xc4, 0x13, 0xb0, 0x67,
+	0xab, 0x91, 0x73, 0x60, 0x46, 0x55, 0x48, 0x06, 0x33, 0x49, 0x75, 0xf4, 0x55, 0x5a, 0x3b, 0xf4,
+	0xdd, 0x97, 0x33, 0xd9, 0xb7, 0xfc, 0x12, 0x26, 0xda, 0xf8, 0x74, 0x42, 0x68, 0x2c, 0xc5, 0x57,
+	0x02, 0xf3, 0xc7, 0x36, 0x94, 0xc4, 0xf7, 0x06, 0x7d, 0xe0, 0x02, 0xa6, 0xde, 0x36, 0xae, 0xec,
+	0x1c, 0xe7, 0x2b, 0xc8, 0x29, 0x7e, 0x9c, 0x25, 0x8f, 0x4c, 0xd4, 0x04, 0xe5, 0xb6, 0x18, 0xc8,
+	0xfe, 0x97, 0xa6, 0x63, 0xf8, 0x35, 0x30, 0x8f, 0x26, 0xd0, 0xa8, 0x41, 0x11, 0xb7, 0x96, 0x84,
+	0xc7, 0x8c, 0xb5, 0x3a, 0xec, 0xad, 0xd2, 0xe9, 0xa2, 0x95, 0x5c, 0xc8, 0xbe, 0x15, 0x9f, 0x09,
+	0xcc, 0xba, 0x44, 0xf5, 0xfe, 0xc0, 0x6f, 0xe1, 0xdc, 0x61, 0x89, 0xbb, 0x0f, 0x74, 0xff, 0x24,
+	0x1a, 0xb8, 0x91, 0x4e, 0xff, 0x4c, 0x45, 0x33, 0x07, 0x8e, 0xdf, 0x00, 0xbd, 0xc1, 0x31, 0xd7,
+	0xb2, 0xd3, 0x8c, 0x7e, 0x80, 0x24, 0x7a, 0xf5, 0x00, 0x2c, 0x82, 0x3c, 0x87, 0x69, 0x61, 0x1b,
+	0xd3, 0x2e, 0xfd, 0x57, 0x7a, 0xb5, 0x18, 0x43, 0x6d, 0x58, 0x71, 0x52, 0x64, 0xb0, 0x2c, 0x6d,
+	0x95, 0x6f, 0xd0, 0x6c, 0x5f, 0xad, 0x0b, 0xc4, 0x15, 0xb4, 0xce, 0x3a, 0x1e, 0xc0, 0x3a, 0xd9,
+	0x4c, 0xe9, 0x12, 0xee, 0xbf, 0x03, 0x00, 0x00, 0xff, 0xff, 0x8b, 0x3c, 0x81, 0x12, 0x17, 0x02,
+	0x00, 0x00,
 }

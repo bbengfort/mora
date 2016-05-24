@@ -19,7 +19,7 @@ func main() {
 	// Load the .env file if it exists
 	godotenv.Load()
 
-	// Insantiate the comamnd line application
+	// Instantiate the command line application.
 	app := cli.NewApp()
 	app.Name = "scio"
 	app.Usage = "run the scio experiment in the background"
