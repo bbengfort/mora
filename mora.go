@@ -26,6 +26,7 @@ type Configuration struct {
 type Sonar struct {
 	Config Configuration // The configuration loaded from the environment
 	Scribo *ScriboClient // A client to connect to the Scribo API
+	Local  *Node         // The local node representation
 }
 
 // New instantiates a Sonar client and loads the configuration from the
@@ -42,6 +43,9 @@ func New() (*Sonar, error) {
 	sonar.Scribo = new(ScriboClient)
 	sonar.Scribo.config = &sonar.Config
 	sonar.Scribo.client = new(http.Client)
+
+	// Create the local node with IP address discovery
+	sonar.Local = &Node{Name: sonar.Config.Name}
 
 	return sonar, nil
 }

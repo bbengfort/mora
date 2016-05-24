@@ -5,13 +5,18 @@ package main
 
 import (
 	"fmt"
-	"net/http"
-	"net/http/httputil"
 	"os"
+	"time"
+
+	"golang.org/x/net/context"
+
+	"google.golang.org/grpc"
 
 	"github.com/bbengfort/mora"
 	"github.com/codegangsta/cli"
 	"github.com/joho/godotenv"
+
+	pb "github.com/bbengfort/mora/echo"
 )
 
 func main() {
@@ -35,40 +40,38 @@ func main() {
 
 // Begins the listening and pinging threads
 func beginSonar(ctx *cli.Context) error {
+	// Set up the server
+	server := &mora.Node{Name: "Obi Wan Kenobi", Address: "localhost:3265"}
+	deadline := time.Duration(20) * time.Second
+
 	sonar, err := mora.New()
 
 	if err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
 
-	// Gets
-	fmt.Println(sonar.Scribo.GetNodes())
-	// dumpResponse(sonar.Scribo.Get(mora.NODES))
-	// dumpResponse(sonar.Scribo.Get(mora.NODES, "1"))
+	// Connect to the server
+	conn, err := grpc.Dial(server.Address, grpc.WithInsecure(), grpc.WithTimeout(deadline))
+	if err != nil {
+		return cli.NewExitError(err.Error(), 1)
+	}
 
-	// Post a new node
-	node := make(map[string]string)
-	node["name"] = "burrito"
-	node["address"] = "1.2.3.4"
-	node["dns"] = "little.donkey.edu"
-	// dumpResponse(sonar.Scribo.Post(node, mora.NODES))
-	// dumpResponse(sonar.Scribo.Put(node, mora.NODES, "4"))
-	// dumpResponse(sonar.Scribo.Delete(mora.NODES, "4"))
+	defer conn.Close()
+	client := pb.NewEchoClient(conn)
+
+	// Contact the echo server and print out response
+	r, err := client.Bounce(context.Background(), &pb.EchoRequest{
+		Source:  sonar.Local.ToEchoNode(),
+		Target:  server.ToEchoNode(),
+		Sent:    &pb.Time{Nanoseconds: time.Now().UnixNano()},
+		Payload: []byte("This is just a test"),
+	})
+
+	if err != nil {
+		return cli.NewExitError(err.Error(), 1)
+	}
+
+	fmt.Println(r.String())
 
 	return nil
-}
-
-func dumpResponse(response *http.Response, err error) error {
-	if err != nil {
-		return cli.NewExitError(err.Error(), 2)
-	}
-
-	fmt.Println("-----------------")
-	body, err := httputil.DumpResponse(response, true)
-	if err == nil {
-		fmt.Println(string(body))
-		fmt.Println("-----------------")
-	}
-
-	return err
 }
