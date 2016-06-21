@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 
 	"github.com/bbengfort/mora/echo"
-	"github.com/gogo/protobuf/proto"
 )
 
 // Node is a model that represents a participant in the network
@@ -52,8 +51,8 @@ func (scribo *ScriboClient) GetNodes() (Nodes, error) {
 // ToEchoNode returns a protocol buffer message ready struct from a node.
 func (node Node) ToEchoNode() *echo.Node {
 	return &echo.Node{
-		Name:    proto.String(node.Name),
-		Address: proto.String(node.Address),
-		Dns:     proto.String(node.DNS),
+		Name:    node.Name,
+		Address: node.Address,
+		Dns:     node.DNS,
 	}
 }
