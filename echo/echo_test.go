@@ -23,21 +23,27 @@ var _ = Describe("Echo", func() {
 		msg := &Time{secs, 0}
 		ts, err := time.Parse(time.RFC3339, moment)
 		Ω(err).ShouldNot(HaveOccurred())
-		Ω(msg.Parse()).Should(Equal(ts))
+
+		// Use Time.Equal to ensure equality even in different locations
+		Ω(ts.Equal(msg.Parse())).Should(BeTrue())
 	})
 
 	It("should be able to parse a time message with nanoseconds", func() {
 		msg := &Time{0, nsecs}
 		ts, err := time.Parse(time.RFC3339Nano, nmoment)
 		Ω(err).ShouldNot(HaveOccurred())
-		Ω(msg.Parse()).Should(Equal(ts))
+
+		// Use Time.Equal to ensure equality even in different locations
+		Ω(ts.Equal(msg.Parse())).Should(BeTrue())
 	})
 
 	It("should be able to parse a time message with both seconds and nanoseconds", func() {
 		msg := &Time{secs, nsrest}
 		ts, err := time.Parse(time.RFC3339Nano, nmoment)
 		Ω(err).ShouldNot(HaveOccurred())
-		Ω(msg.Parse()).Should(Equal(ts))
+
+		// Use Time.Equal to ensure equality even in different locations
+		Ω(ts.Equal(msg.Parse())).Should(BeTrue())
 	})
 
 })
