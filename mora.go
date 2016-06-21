@@ -17,7 +17,7 @@ const Version = "0.1"
 // will error out if required configuration values are missing.
 type Configuration struct {
 	Name      string `envconfig:"node_name" required:"true"`
-	Port      string `envconfig:"port" default:"3265"`
+	Addr      string `envconfig:"node_addr" required:"false"`
 	ScriboURL string `envconfig:"scribo_url" default:"https://mora-scribo.herokuapp.com/"`
 	ScriboKey string `envconfig:"scribo_key" required:"true"`
 }
@@ -46,12 +46,22 @@ func New() (*Sonar, error) {
 	sonar.Scribo.client = new(http.Client)
 
 	// Create the local node with IP address discovery
-	sonar.Local = &Node{Name: sonar.Config.Name}
+	address, err := ResolveAddr(sonar.Config.Addr)
+	if err != nil {
+		return nil, err
+	}
+
+	sonar.Local = &Node{
+		Name:    sonar.Config.Name,
+		Address: address,
+	}
 
 	return sonar, nil
 }
 
 // Run the sonar utility by instantiating various go routines.
 func (sonar *Sonar) Run() error {
-	return sonar.Listen(sonar.Config.Port)
+
+	// Note, don't use config value, use local, resolved address!
+	return sonar.Listen(sonar.Local.Address)
 }

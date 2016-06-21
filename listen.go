@@ -2,6 +2,7 @@ package mora
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"time"
 
@@ -30,12 +31,15 @@ func (s *Sonar) Bounce(ctx context.Context, in *pb.EchoRequest) (*pb.EchoReply, 
 }
 
 // Listen runs the echo server (typically as a Go routine) to respond to echos.
-func (s *Sonar) Listen(port string) error {
+func (s *Sonar) Listen(addr string) error {
 	// Create the socket to listen on
-	sock, err := net.Listen("tcp", ":"+port)
+	sock, err := net.Listen("tcp", addr)
 	if err != nil {
 		return err
 	}
+
+	// Log the fact that we are listening on the address we are.
+	log.Printf("Listening for Echo Requests on %s\n", addr)
 
 	// Create the grpc server, handler, and listen
 	server := grpc.NewServer()

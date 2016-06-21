@@ -15,7 +15,7 @@ import (
 
 func main() {
 	// Set up the server
-	server := &mora.Node{Name: "Obi Wan Kenobi", Address: "localhost:3265"}
+	server := &mora.Node{Name: "Obi Wan Kenobi", Address: "192.168.1.11:3265"}
 	local := &mora.Node{Name: "Luke Skywalker", Address: "localhost:3265"}
 	deadline := time.Duration(20) * time.Second
 
