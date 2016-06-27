@@ -17,6 +17,7 @@ const MinimumWait = 1 * time.Second
 type JitteredInterval struct {
 	Action          func() error  // The action to be called on the jittered interval
 	Stopped         bool          // A flag determining the state of the worker
+	ErrorChannel    chan error    // Used to retrieve errors from the worker
 	ShutdownChannel chan string   // A channel to communicate to the routine
 	Interval        time.Duration // The interval with which to run the generator
 	period          time.Duration // The actual period of the wait
@@ -28,6 +29,7 @@ func NewJitteredInterval(action func() error, interval time.Duration) *JitteredI
 	return &JitteredInterval{
 		Action:          action,
 		Stopped:         false,
+		ErrorChannel:    make(chan error),
 		ShutdownChannel: make(chan string),
 		Interval:        interval,
 		period:          interval,
@@ -35,14 +37,18 @@ func NewJitteredInterval(action func() error, interval time.Duration) *JitteredI
 }
 
 // Run starts the interval and listens for a shutdown call.
-func (jw *JitteredInterval) Run() error {
+// Expects to be run as a go routine, therefore produces no output.
+func (jw *JitteredInterval) Run() {
+
+	// Signal that we are no longer stopped
+	jw.Stopped = false
 
 	// Loop that runs forever
 	for {
 		select {
 		case <-jw.ShutdownChannel:
 			jw.ShutdownChannel <- "Down"
-			return nil
+			jw.ErrorChannel <- nil
 		case <-time.After(jw.period):
 			// This breaks out of the select, not the for loop.
 			break
@@ -51,8 +57,8 @@ func (jw *JitteredInterval) Run() error {
 		// Execute the ping generator action tracking how much time went by.
 		started := time.Now()
 		if err := jw.Action(); err != nil {
-			// If there was an error, then we're going to stop and return it.
-			return err
+			// If there was an error, then add it to the error channel
+			jw.ErrorChannel <- err
 		}
 
 		// Reset the period less the amount of work gone by with some jitter.

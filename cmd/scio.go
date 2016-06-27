@@ -23,7 +23,6 @@ func main() {
 	app.Version = mora.Version
 	app.Author = "Benjamin Bengfort"
 	app.Email = "benjamin@bengfort.com"
-	app.EnableBashCompletion = true
 	app.Action = beginSonar
 
 	// Run the command line application
