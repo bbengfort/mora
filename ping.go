@@ -12,6 +12,20 @@ import (
 // Timeout is the amount of time sonar will wait for a reply
 const Timeout = time.Duration(30) * time.Second
 
+// Generate is the main entry point to the ping generator component of Scio.
+// It is the action that is set to the Interval to run on a routine basis.
+// Every s.Config.PingInterval this function is run, any errors are logged.
+func (s *Sonar) Generate() error {
+
+	// Step one - synchronize with Scribo (also serves as a heartbeat).
+	err := s.Scribo.Sync(s.Local)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Ping sends an echo request to a node and records the results, reporting
 // them to the Scribo web application. Ping works for a single node only.
 func (s *Sonar) Ping(node *Node) (*pb.EchoReply, error) {

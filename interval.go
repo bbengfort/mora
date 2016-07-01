@@ -7,7 +7,7 @@ import (
 
 // JitterSigma is the standard deviation of the jitter on the interval, which
 // prevents collisions by providing noise to when each node starts pinging.
-const JitterSigma = 2
+const JitterSigma = 8
 
 // MinimumWait specifies the minimum number of seconds to wait between actions.
 const MinimumWait = 1 * time.Second
@@ -83,8 +83,8 @@ func (jw *JitteredInterval) Shutdown() {
 }
 
 // GetJitter returns a positive or negative number of seconds with a mean of
-// zero and a standard deviation of 2, effectivelly jittering the interval
-// between around -6 and 6 seconds, though mostly not doing very much jitter.
+// zero and a standard deviation of 8, effectivelly jittering the interval
+// between around -24 and 24 seconds, though mostly not doing very much jitter.
 func (jw *JitteredInterval) GetJitter() time.Duration {
 	sample := rand.NormFloat64() * JitterSigma
 	return time.Duration(sample*1000) * time.Millisecond

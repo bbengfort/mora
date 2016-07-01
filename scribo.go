@@ -22,7 +22,7 @@ const (
 // Request Header Keys and Values
 const (
 	ContentTypeKey = "Content-Type"
-	ContentTypeVal = "application/json;charset=UTF-8"
+	ContentTypeVal = "application/json"
 	XScriboKey     = "X-Scribo-Application"
 	XScriboVal     = "Mora-Scio/v%s"
 )

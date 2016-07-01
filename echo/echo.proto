@@ -17,9 +17,10 @@ message Time {
 // Node describes an echoing machine on the network, either the sender
 // (the source) or the receiver (the target). This is distinct from mora.Node.
 message Node {
-    string name  = 1;
-    string address  = 2;
-    string dns  = 3;
+    int64 id = 1;
+    string name  = 2;
+    string address  = 3;
+    string dns  = 4;
 }
 
 // EchoRequest is used to measure latency and uptime as with a ping, but
