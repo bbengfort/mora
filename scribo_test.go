@@ -3,7 +3,6 @@ package mora_test
 import (
 	"crypto/sha256"
 	"net/http"
-	"net/http/httputil"
 
 	. "github.com/bbengfort/mora"
 	"github.com/tent/hawk-go"
@@ -63,7 +62,7 @@ var _ = Describe("Client", func() {
 		Ω(endpoint).Should(Equal(TEST_MORA_SCRIBO_URL + "nodes/1/set-password"))
 	})
 
-	Describe("client requests to a test server", func() {
+	Describe("requests to a test server", func() {
 
 		BeforeEach(func() {
 			server = ghttp.NewServer()
@@ -77,32 +76,134 @@ var _ = Describe("Client", func() {
 			server.Close()
 		})
 
-		Describe("fetching a node list", func() {
+		Describe("the nodes endpoint", func() {
 
-			BeforeEach(func() {
+			Context("GET /nodes", func() {
+				BeforeEach(func() {
+					server.AppendHandlers(
+						ghttp.CombineHandlers(
+							ghttp.VerifyRequest("GET", "/nodes"),
+							VerifyAuth(TEST_MORA_SCRIBO_KEY),
+							ghttp.RespondWith(http.StatusOK, `[
+                                {"id":3,"name":"dropbox","address":"108.160.172.238","dns":"dropbox.com","created":"2016-05-13T00:11:05.043484-04:00","updated":"2016-05-13T00:11:05.043484-04:00"},
+                                {"id":2,"name":"github","address":"192.30.252.122","dns":"github.com","created":"2016-05-13T00:10:20.734114-04:00","updated":"2016-05-13T00:10:20.734114-04:00"},
+                                {"id":1,"name":"apollo","address":"108.51.64.223","dns":"bryant.bengfort.com","created":"2016-05-12T23:38:13.930893-04:00","updated":"2016-05-12T23:38:13.930893-04:00"}
+                            ]`),
+						),
+					)
+				})
 
-				server.AppendHandlers(
-					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("GET", "/nodes"),
-						ghttp.RespondWith(204, ""),
-						ghttp.VerifyContentType("application/json"),
-						VerifyAuth(TEST_MORA_SCRIBO_KEY),
-						ghttp.RespondWith(200, `[{"id":3,"name":"dropbox","address":"108.160.172.238","dns":"dropbox.com","created":"2016-05-13T00:11:05.043484-04:00","updated":"2016-05-13T00:11:05.043484-04:00"},{"id":2,"name":"github","address":"192.30.252.122","dns":"github.com","created":"2016-05-13T00:10:20.734114-04:00","updated":"2016-05-13T00:10:20.734114-04:00"},{"id":1,"name":"apollo","address":"108.51.64.223","dns":"bryant.bengfort.com","created":"2016-05-12T23:38:13.930893-04:00","updated":"2016-05-12T23:38:13.930893-04:00"}]`),
-					),
-				)
+				It("should be able to GET a response from the endpoint", func() {
+					response, err := sonar.Scribo.Get(NODES)
+					Ω(err).ShouldNot(HaveOccurred())
+					Ω(response).ShouldNot(BeNil(), "No response was returned from nodes.")
+
+					Ω(response.StatusCode).Should(Equal(200))
+				})
+
+				It("should be able to GET a list of Node pointers", func() {
+					nodes, err := sonar.Scribo.GetNodes()
+					Ω(err).ShouldNot(HaveOccurred())
+					Ω(nodes).ShouldNot(BeEmpty(), "No nodes were returned?")
+
+					expected := Nodes{
+						Node{
+							ID:      3,
+							Name:    "dropbox",
+							Address: "108.160.172.238",
+							DNS:     "dropbox.com",
+						},
+						Node{
+							ID:      2,
+							Name:    "github",
+							Address: "192.30.252.122",
+							DNS:     "github.com",
+						},
+						Node{
+							ID:      1,
+							Name:    "apollo",
+							Address: "108.51.64.223",
+							DNS:     "bryant.bengfort.com",
+						},
+					}
+
+					Ω(nodes).Should(Equal(expected))
+
+				})
+
 			})
 
-			It("should be able to fetch a node list", func() {
-				Skip("Test server is not responding correctly.")
-				response, err := sonar.Scribo.Get(NODES)
-				Ω(err).ShouldNot(HaveOccurred())
-				Ω(response).ShouldNot(BeNil(), "No response was returned from nodes.")
+			Context("GET /nodes?lookup=apollo", func() {
+				BeforeEach(func() {
+					server.AppendHandlers(
+						ghttp.CombineHandlers(
+							ghttp.VerifyRequest("GET", "/nodes", "lookup=apollo"),
+							VerifyAuth(TEST_MORA_SCRIBO_KEY),
+							ghttp.RespondWith(http.StatusOK, `[
+                                {"id":1,"name":"apollo","address":"108.51.64.223","dns":"bryant.bengfort.com","created":"2016-05-12T23:38:13.930893-04:00","updated":"2016-05-12T23:38:13.930893-04:00"}
+                            ]`),
+						),
+					)
+				})
 
-				data, err := httputil.DumpResponse(response, true)
-				Ω(err).ShouldNot(HaveOccurred())
-				GinkgoWriter.Write(data)
+				It("should be able to lookup a Node by name", func() {
+					node, err := sonar.Scribo.LookupNode("apollo")
+					Ω(err).ShouldNot(HaveOccurred())
 
-				Ω(response.StatusCode).Should(Equal(200))
+					expected := &Node{
+						ID:      1,
+						Name:    "apollo",
+						Address: "108.51.64.223",
+						DNS:     "bryant.bengfort.com",
+					}
+
+					Ω(node).Should(Equal(expected))
+				})
+			})
+
+			Context("GET /nodes?lookup=nocow", func() {
+				BeforeEach(func() {
+					server.AppendHandlers(
+						ghttp.CombineHandlers(
+							ghttp.VerifyRequest("GET", "/nodes", "lookup=nocow"),
+							VerifyAuth(TEST_MORA_SCRIBO_KEY),
+							ghttp.RespondWith(http.StatusNotFound, `{
+                              "code": "404",
+                              "error": "Could not find a node named nocow"
+                            }`),
+						),
+					)
+				})
+
+				It("should handle lookups for not found items", func() {
+					node, err := sonar.Scribo.LookupNode("nocow")
+					Ω(err).Should(HaveOccurred())
+					Ω(node).Should(BeNil())
+				})
+			})
+
+			Context("POST /nodes", func() {
+				BeforeEach(func() {
+					server.AppendHandlers(
+						ghttp.CombineHandlers(
+							ghttp.VerifyRequest("POST", "/nodes"),
+							VerifyAuth(TEST_MORA_SCRIBO_KEY),
+							ghttp.VerifyJSON(`{"name":"test","address":"10.10.8.8","dns":""}`),
+							ghttp.RespondWith(http.StatusOK, `{"id":4,"name":"test","address":"10.10.8.8","dns":"","created":"2016-05-13T00:11:05.043484-04:00","updated":"2016-05-13T00:11:05.043484-04:00"}`),
+						),
+					)
+				})
+
+				It("should be able to post a node", func() {
+					node := &Node{
+						Name:    "test",
+						Address: "10.10.8.8",
+					}
+
+					response, err := sonar.Scribo.Post(node, NODES)
+					Ω(err).ShouldNot(HaveOccurred())
+					Ω(response).ShouldNot(BeNil(), "No response was returned from nodes.")
+				})
 			})
 
 		})

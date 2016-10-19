@@ -6,40 +6,60 @@ import (
 	"log"
 	"time"
 
-	"google.golang.org/grpc"
-
 	"github.com/bbengfort/mora"
+	"github.com/joho/godotenv"
+
 	pb "github.com/bbengfort/mora/echo"
-	"golang.org/x/net/context"
+	"github.com/bbengfort/mora/moralog"
+	"google.golang.org/grpc/grpclog"
 )
 
+var (
+	sonar    *mora.Sonar
+	remote   *mora.Node
+	interval *mora.JitteredInterval
+	response *pb.EchoReply
+	err      error
+)
+
+func ping() error {
+	response, err = sonar.Ping(remote)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(response)
+	return nil
+}
+
+func init() {
+	// Disable the grpc logger - but apparently this is still taking performance
+	// http://stackoverflow.com/questions/10571182/go-disable-a-log-logger
+	grpclog.SetLogger(&moralog.NoopLogger{})
+}
+
 func main() {
+	// Load the .env file if it exists
+	godotenv.Load()
+
 	// Set up the server
-	server := &mora.Node{Name: "Obi Wan Kenobi", Address: "192.168.1.11:3265"}
-	local := &mora.Node{Name: "Luke Skywalker", Address: "localhost:3265"}
-	deadline := time.Duration(20) * time.Second
+	remote = &mora.Node{Name: "Apollo", Address: "192.168.1.11:3265"}
+	interval = mora.NewJitteredInterval(ping, 8*time.Second)
 
-	// Connect to the server
-	conn, err := grpc.Dial(server.Address, grpc.WithInsecure(), grpc.WithTimeout(deadline))
+	sonar, err = mora.New()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	defer conn.Close()
-	client := pb.NewEchoClient(conn)
+	go interval.Run()
 
-	// Contact the echo server and print out response
-	r, err := client.Bounce(context.Background(), &pb.EchoRequest{
-		Source:  local.ToEchoNode(),
-		Target:  server.ToEchoNode(),
-		Sent:    &pb.Time{Nanoseconds: time.Now().UnixNano()},
-		Payload: []byte("This is just a test"),
-	})
-
-	if err != nil {
-		log.Fatal(err)
+	for i := 0; i < 10; i++ {
+		err := <-interval.ErrorChannel
+		if err != nil {
+			log.Println(err)
+		}
 	}
 
-	fmt.Println(r.String())
-
+	interval.Shutdown()
+	log.Fatal("More than 10 errors occurred!")
 }

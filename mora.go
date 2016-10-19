@@ -6,6 +6,7 @@ package mora
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/kelseyhightower/envconfig"
 )
@@ -16,18 +17,20 @@ const Version = "0.1"
 // Configuration is loaded from the environment with reasonable defaults but
 // will error out if required configuration values are missing.
 type Configuration struct {
-	Name      string `envconfig:"node_name" required:"true"`
-	Addr      string `envconfig:"node_addr" required:"false"`
-	ScriboURL string `envconfig:"scribo_url" default:"https://mora-scribo.herokuapp.com/"`
-	ScriboKey string `envconfig:"scribo_key" required:"true"`
+	Name         string `envconfig:"node_name" required:"true"`
+	Addr         string `envconfig:"node_addr" required:"false"`
+	ScriboURL    string `envconfig:"scribo_url" default:"https://mora-scribo.herokuapp.com/"`
+	ScriboKey    string `envconfig:"scribo_key" required:"true"`
+	PingInterval string `envconfig:"ping_interval" default:"720s"`
 }
 
 // Sonar is the send, respond, and listen application that implements both the
 // Scio and Oro interfaces and maintains global configuration information.
 type Sonar struct {
-	Config Configuration // The configuration loaded from the environment
-	Scribo *ScriboClient // A client to connect to the Scribo API
-	Local  *Node         // The local node representation
+	Config  Configuration     // The configuration loaded from the environment
+	Local   *Node             // The local node representation
+	Scribo  *ScriboClient     // A client to connect to the Scribo API
+	Emitter *JitteredInterval // Generates pings and reports to Scribo
 }
 
 // New instantiates a Sonar client and loads the configuration from the
@@ -44,6 +47,13 @@ func New() (*Sonar, error) {
 	sonar.Scribo = new(ScriboClient)
 	sonar.Scribo.config = &sonar.Config
 	sonar.Scribo.client = new(http.Client)
+
+	// Create the emitter (ping generator) as a jittered interval
+	interval, err := time.ParseDuration(sonar.Config.PingInterval)
+	if err != nil {
+		return nil, err
+	}
+	sonar.Emitter = NewJitteredInterval(sonar.Generate, interval)
 
 	// Create the local node with IP address discovery
 	address, err := ResolveAddr(sonar.Config.Addr)
@@ -63,5 +73,6 @@ func New() (*Sonar, error) {
 func (sonar *Sonar) Run() error {
 
 	// Note, don't use config value, use local, resolved address!
+	// Instead of returning the error, log and report to command line.
 	return sonar.Listen(sonar.Local.Address)
 }
